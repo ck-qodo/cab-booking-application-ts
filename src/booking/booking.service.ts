@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { BookingRepository } from './repositories/booking.repository';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ShareRideDto } from './dto/share-ride.dto';
 import { Booking, BookingStatus } from './entities/booking.entity';
 import { UserService } from '../user/user.service';
 import { DriverService } from '../driver/driver.service';
@@ -50,6 +51,35 @@ export class BookingService {
 
     // Notify all available drivers
     await this.notificationService.notifyAvailableDrivers(booking);
+
+    // Share ride details if sharing options are provided
+    if (createBookingDto.shareWithEmails?.length || createBookingDto.shareWithPhoneNumbers?.length) {
+      const rideDetails = {
+        bookingId: booking.id,
+        pickup: booking.pickup,
+        dropoff: booking.dropoff,
+        fare: booking.fare,
+        status: booking.status,
+        scheduledTime: booking.scheduledTime,
+      };
+
+      // Share via email if emails are provided
+      if (createBookingDto.shareWithEmails?.length) {
+        await this.notificationService.sendEmail({
+          to: createBookingDto.shareWithEmails,
+          subject: 'Ride Details Shared',
+          text: `Ride details for booking ${booking.id}:\n${JSON.stringify(rideDetails, null, 2)}`,
+        });
+      }
+
+      // Share via SMS if phone numbers are provided
+      if (createBookingDto.shareWithPhoneNumbers?.length) {
+        await this.notificationService.sendSMS({
+          to: createBookingDto.shareWithPhoneNumbers,
+          message: `Ride details for booking ${booking.id}:\n${JSON.stringify(rideDetails, null, 2)}`,
+        });
+      }
+    }
 
     return booking;
   }
@@ -165,6 +195,62 @@ export class BookingService {
 
   async getDriverBookings(driverId: string): Promise<Booking[]> {
     return this.bookingRepository.findByDriverId(driverId);
+  }
+
+  async shareRideDetails(shareRideDto: ShareRideDto): Promise<void> {
+    const booking = await this.bookingRepository.findById(shareRideDto.bookingId);
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const user = await this.userService.findById(booking.userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const driver = await this.driverService.findById(booking.driverId);
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    const cab = await this.cabService.findById(booking.cabId);
+    if (!cab) {
+      throw new NotFoundException('Cab not found');
+    }
+
+    // Prepare ride details message
+    const rideDetails = {
+      bookingId: booking.id,
+      pickup: booking.pickup,
+      dropoff: booking.dropoff,
+      fare: booking.fare,
+      status: booking.status,
+      driverName: driver.name,
+      driverPhone: driver.phone,
+      cabDetails: {
+        model: cab.model,
+        color: cab.color,
+        licensePlate: cab.licensePlate,
+      },
+      scheduledTime: booking.scheduledTime,
+    };
+
+    // Share via email if emails are provided
+    if (shareRideDto.emails && shareRideDto.emails.length > 0) {
+      await this.notificationService.sendEmail({
+        to: shareRideDto.emails,
+        subject: 'Ride Details Shared',
+        text: `Ride details for booking ${booking.id}:\n${JSON.stringify(rideDetails, null, 2)}`,
+      });
+    }
+
+    // Share via SMS if phone numbers are provided
+    if (shareRideDto.phoneNumbers && shareRideDto.phoneNumbers.length > 0) {
+      await this.notificationService.sendSMS({
+        to: shareRideDto.phoneNumbers,
+        message: `Ride details for booking ${booking.id}:\n${JSON.stringify(rideDetails, null, 2)}`,
+      });
+    }
   }
 
   private calculateFare(
