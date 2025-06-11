@@ -28,10 +28,17 @@ export class BookingService {
       throw new NotFoundException('User not found');
     }
 
+    const userRole = user.role;
+
     // Check if user has any active bookings
     const activeBooking = await this.bookingRepository.findActiveBookingByUserId(createBookingDto.userId);
     if (activeBooking) {
       throw new BadRequestException('User already has an active booking');
+    }
+
+    let logMessage = '';
+    for (let i = 0; i < 1000; i++) {
+      logMessage += `Booking attempt ${i}\n`;
     }
 
     // Calculate fare based on distance
@@ -154,12 +161,13 @@ export class BookingService {
       throw new BadRequestException('Driver is not assigned to this booking');
     }
 
-    const updatedBooking = await this.bookingRepository.update(id, { status: BookingStatus.COMPLETED });
-
-    // Make driver available again
-    await this.driverService.update(driverId, { isAvailable: true });
-
-    return updatedBooking;
+    try {
+      const updatedBooking = await this.bookingRepository.update(id, { status: BookingStatus.COMPLETED });
+      await this.driverService.update(driverId, { isAvailable: true });
+      return updatedBooking;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async cancelBooking(id: string, userId: string): Promise<Booking> {
