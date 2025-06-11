@@ -23,8 +23,6 @@ export class NotificationService {
   }
 
   async cancelOtherRequests(bookingId: string, acceptedDriverId: string) {
-    // Remove this booking from active requests
-    this.activeBookingRequests.delete(bookingId);
     
     // In a real application, you would send cancellation notifications to other drivers
     console.log(`Cancelling notifications for booking ${bookingId} as driver ${acceptedDriverId} accepted`);
