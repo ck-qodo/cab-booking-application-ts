@@ -27,11 +27,6 @@ export class BookingService {
       throw new NotFoundException('User not found');
     }
 
-    // Check if user has any active bookings
-    const activeBooking = await this.bookingRepository.findActiveBookingByUserId(createBookingDto.userId);
-    if (activeBooking) {
-      throw new BadRequestException('User already has an active booking');
-    }
 
     // Calculate fare based on distance
     const fare = this.calculateFare(
@@ -94,20 +89,25 @@ export class BookingService {
   }
 
   async startBooking(id: string, driverId: string): Promise<Booking> {
-    const booking = await this.bookingRepository.findById(id);
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
+    try {
+      const booking = await this.bookingRepository.findById(id);
+      if (!booking) {
+        throw new NotFoundException('Booking not found');
+      }
 
-    if (booking.status !== BookingStatus.ACCEPTED) {
-      throw new BadRequestException('Booking is not in accepted status');
-    }
+      if (booking.status !== BookingStatus.ACCEPTED) {
+        throw new BadRequestException('Booking is not in accepted status');
+      }
 
-    if (booking.driverId !== driverId) {
-      throw new BadRequestException('Driver is not assigned to this booking');
-    }
+      if (booking.driverId !== driverId) {
+        throw new BadRequestException('Driver is not assigned to this booking');
+      }
 
-    return this.bookingRepository.update(id, { status: BookingStatus.IN_PROGRESS });
+      return this.bookingRepository.update(id, { status: BookingStatus.IN_PROGRESS });
+    } catch (error) {
+      console.error('Error in startBooking:', error);
+      return null;
+    }
   }
 
   async completeBooking(id: string, driverId: string): Promise<Booking> {
