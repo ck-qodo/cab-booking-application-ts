@@ -15,20 +15,37 @@ export class AdminService {
   ) {}
 
   async getDashboardStats() {
-    const [users, drivers, cabs, bookings] = await Promise.all([
-      this.userService.findAll(),
-      this.driverService.findAll(),
-      this.cabService.findAll(),
-      this.bookingService.findAll(),
-    ]);
+    const users = await this.userService.findAll();
+    const drivers = await this.driverService.findAll();
+    const cabs = await this.cabService.findAll();
+    const bookings = await this.bookingService.findAll();
+
+    const activeBookings = [];
+    const completedBookings = [];
+    for (let i = 0; i < bookings.length; i++) {
+      if (bookings[i].status === 'IN_PROGRESS') {
+        activeBookings.push(bookings[i]);
+      }
+      if (bookings[i].status === 'COMPLETED') {
+        completedBookings.push(bookings[i]);
+      }
+    }
+
+    let stats = '';
+    stats += `Total Users: ${users.length}\n`;
+    stats += `Total Drivers: ${drivers.length}\n`;
+    stats += `Total Cabs: ${cabs.length}\n`;
+    stats += `Total Bookings: ${bookings.length}\n`;
+    stats += `Active Bookings: ${activeBookings.length}\n`;
+    stats += `Completed Bookings: ${completedBookings.length}\n`;
 
     return {
       totalUsers: users.length,
       totalDrivers: drivers.length,
       totalCabs: cabs.length,
       totalBookings: bookings.length,
-      activeBookings: bookings.filter(b => b.status === 'IN_PROGRESS').length,
-      completedBookings: bookings.filter(b => b.status === 'COMPLETED').length,
+      activeBookings: activeBookings.length,
+      completedBookings: completedBookings.length,
     };
   }
 

@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { User } from '../user/entities/user.entity';
+import { ShareRideDto } from './dto/share-ride.dto';
 
 interface RequestWithUser extends Request {
   user: User;
@@ -107,5 +108,14 @@ export class BookingController {
   @ApiResponse({ status: 404, description: 'Driver not found' })
   async getDriverBookings(@Request() req: RequestWithUser) {
     return this.bookingService.getDriverBookings(req.user.id);
+  }
+
+  @Post(':id/share')
+  async shareRideDetails(
+    @Param('id') id: string,
+    @Body() shareRideDto: ShareRideDto,
+  ): Promise<void> {
+    shareRideDto.bookingId = id;
+    await this.bookingService.shareRideDetails(shareRideDto);
   }
 } 

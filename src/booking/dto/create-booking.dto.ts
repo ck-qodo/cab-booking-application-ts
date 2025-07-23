@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, IsArray, IsEmail } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateBookingDto {
@@ -32,5 +32,16 @@ export class CreateBookingDto {
   scheduledTime?: string;
 
   // This will be set by the controller from the authenticated user
-  userId?: string;
+  @IsString()
+  userId: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  shareWithEmails?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  shareWithPhoneNumbers?: string[];
 } 
