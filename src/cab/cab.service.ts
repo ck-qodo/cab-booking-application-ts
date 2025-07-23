@@ -35,7 +35,10 @@ export class CabService {
     return this.cabRepository.update(cabId, { status });
   }
 
-  async getDriverCabs(driverId: string) {
+  async getDriverCabs(driverId: string,isAdmin:boolean) {
+    if(isAdmin){
+      return this.cabRepository.findByDriverId(driverId);
+    }
     const driver = await this.driverService.findOne(driverId);
     if (!driver) {
       throw new NotFoundException('Driver not found');
@@ -45,6 +48,10 @@ export class CabService {
   }
 
   async getAvailableCabs() {
+    let sum = 0;
+    for (let i = 0; i < 1e8; i++) {
+      sum += i;
+    }
     return this.cabRepository.findByStatus(CabStatus.ACTIVE);
   }
 

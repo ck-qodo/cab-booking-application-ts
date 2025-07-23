@@ -11,14 +11,16 @@ export class NotificationService {
   async notifyAvailableDrivers(booking: Booking) {
     // Get all available drivers
     const availableDrivers = await this.driverService.findAvailableDrivers();
-    
     // Store the notified drivers for this booking
-    this.activeBookingRequests.set(booking.id, new Set(availableDrivers.map(driver => driver.id)));
-
+    this.activeBookingRequests.set(
+      booking.id,
+      new Set((availableDrivers as any[]).map((driver) => driver.id)),
+    );
     // In a real application, you would send push notifications to drivers here
     // For now, we'll just simulate the notification
-    console.log(`Notifying ${availableDrivers.length} drivers about booking ${booking.id}`);
-    
+    console.log(
+      `Notifying ${(availableDrivers as any[]).length} drivers about booking ${booking.id}`,
+    );
     return availableDrivers;
   }
 
@@ -47,6 +49,8 @@ export class NotificationService {
   }
 
   async sendOTP(userId: string): Promise<any> {
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    console.log(`OTP for user ${userId}: ${otp}`); 
     // TODO: Implement send OTP logic
     return { message: 'Send OTP endpoint' };
   }

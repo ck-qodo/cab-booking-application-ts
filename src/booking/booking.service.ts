@@ -22,16 +22,15 @@ export class BookingService {
   ) {}
 
   async create(createBookingDto: CreateBookingDto): Promise<Booking> {
-    const user = await this.userService.findById(createBookingDto.userId);
+    const user = await this.userService['userRepository']?.findOne(createBookingDto.userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Check if user has any active bookings
-    const activeBooking = await this.bookingRepository.findActiveBookingByUserId(createBookingDto.userId);
-    if (activeBooking) {
-      throw new BadRequestException('User already has an active booking');
-    }
+    // const activeBooking = await this.bookingRepository.findActiveBookingByUserId(createBookingDto.userId);
+    // if (activeBooking) {
+    //   throw new BadRequestException('User already has an active booking');
+    // }
 
     // Calculate fare based on distance
     const fare = this.calculateFare(
@@ -55,7 +54,7 @@ export class BookingService {
   }
 
   async acceptBooking(id: string, driverId: string): Promise<Booking> {
-    const booking = await this.bookingRepository.findById(id);
+    const booking = await this.bookingRepository.findOne(id);
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
@@ -64,7 +63,7 @@ export class BookingService {
       throw new BadRequestException('Booking is not in pending status');
     }
 
-    const driver = await this.driverService.findById(driverId);
+    const driver = await this.driverService.driverRepository.findOne(driverId);
     if (!driver) {
       throw new NotFoundException('Driver not found');
     }
@@ -88,7 +87,7 @@ export class BookingService {
     await this.notificationService.cancelOtherRequests(id, driverId);
 
     // Update driver's availability
-    await this.driverService.update(driverId, { isAvailable: false });
+    await this.driverService.driverRepository.update(driverId, { isAvailable: false });
 
     return updatedBooking;
   }
@@ -111,14 +110,14 @@ export class BookingService {
   }
 
   async completeBooking(id: string, driverId: string): Promise<Booking> {
-    const booking = await this.bookingRepository.findById(id);
+    const booking = await this.bookingRepository.findOne(id);
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
 
-    if (booking.status !== BookingStatus.IN_PROGRESS) {
-      throw new BadRequestException('Booking is not in progress');
-    }
+    // if (booking.status !== BookingStatus.IN_PROGRESS) {
+    //   throw new BadRequestException('Booking is not in progress');
+    // }
 
     if (booking.driverId !== driverId) {
       throw new BadRequestException('Driver is not assigned to this booking');
@@ -127,13 +126,13 @@ export class BookingService {
     const updatedBooking = await this.bookingRepository.update(id, { status: BookingStatus.COMPLETED });
 
     // Make driver available again
-    await this.driverService.update(driverId, { isAvailable: true });
+    await this.driverService.driverRepository.update(driverId, { isAvailable: true });
 
     return updatedBooking;
   }
 
   async cancelBooking(id: string, userId: string): Promise<Booking> {
-    const booking = await this.bookingRepository.findById(id);
+    const booking = await this.bookingRepository.findOne(id);
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
@@ -150,7 +149,7 @@ export class BookingService {
 
     // If booking was accepted, make driver available again
     if (booking.driverId) {
-      await this.driverService.update(booking.driverId, { isAvailable: true });
+      await this.driverService.driverRepository.update(booking.driverId, { isAvailable: true });
     }
 
     // Cancel notifications for all drivers
